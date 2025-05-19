@@ -14,6 +14,15 @@ ACOUSTIC_MODEL = os.path.join("model", "pt-br", "cmusphinx-pt-br-5.2")
 DICTIONARY = os.path.join("model", "pt-br", "br-pt.dic")
 KEYWORDS_FILE = "keywords.list"
 
+COMMANDS = {
+      "abrir navegador": lambda: os.system("firefox https://www.google.com"),
+      "fechar navegador": lambda: os.system("pkill firefox"),
+      "abrir terminal": lambda: os.system("gnome-terminal"),
+      "fechar terminal": lambda: os.system("pkill gnome-terminal"),
+}
+
+
+
 def configure_decoder():
   # config = Config()
   # config.set_string('-hmm', ACOUSTIC_MODEL)
@@ -49,6 +58,14 @@ def detect_keywords():
         decoder.process_raw(buf, False, False)
         if decoder.hyp() is not None:
           print(f"Keyword detected: {decoder.hyp().hypstr}")
+          hypothesis = decoder.hyp().hypstr
+          if hypothesis in COMMANDS:
+              print(f"Executando ação para: {hypothesis}")
+              COMMANDS[hypothesis]()
+          else:
+              print(f"Nenhuma ação mapeada para: {hypothesis}")
+          
+          
           decoder.end_utt()
           decoder.start_utt()
           

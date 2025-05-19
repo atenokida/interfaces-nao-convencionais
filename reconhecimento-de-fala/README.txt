@@ -8,9 +8,11 @@
 
   3) Atualize o pip:
        python -m pip install --upgrade pip
-
-  4) Instale as dependências:
+  4) Baixar as dependências:
+     sudo apt-get install portaudio19-dev
+  
+  5) Instale as dependências:
        pip install -r requirements.txt
 
-  5) Execute o script:
+  6) Execute o script:
        python main.py
