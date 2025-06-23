@@ -22,10 +22,10 @@ Permite controlar jogos de plataforma simples (e.g. Super Mario) usando express�
     .\venv\Scripts\activate
 
 ### 2. Instale as dependências
-    `pip install -r requirements.txt`
+    pip install -r requirements.txt
 
 ### 3. Execute o script
-    `python mascara.py`
+    python mascara.py
 
 ## Mapeamento padrão
   * Olho esquerdo fechado &rarr; Tecla `a`
