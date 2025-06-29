@@ -25,7 +25,7 @@ Permite controlar jogos de plataforma simples (e.g. Super Mario) usando express√
     pip install -r requirements.txt
 
 ### 3. Execute o script
-    python mascara.py
+    python main.py
 
 ## Mapeamento padr√£o
   * Olho esquerdo fechado &rarr; Tecla `a`
