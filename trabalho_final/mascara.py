@@ -9,25 +9,30 @@ import cv2
 import mediapipe as mp
 import pyautogui
 
+import face_mesh_module
+
 PONTOS_OLHO_ESQUERDO = [362, 385, 387, 263, 373, 380]
 PONTOS_OLHO_DIREITO = [33, 160, 158, 133, 153, 144]
 PONTOS_BOCA = [78, 308, 13, 14]
+
+LIMIAR_PISCADA = 0.15
+LIMIAR_BOCA_ABERTA = 0.3
+
+TECLA_OLHO_ESQUERDO_FECHADO = 'a'
+TECLA_OLHO_DIREITO_FECHADO = 'd'
+TECLA_BOCA_ABERTA = 'w'
 
 malha_facial = mp.solutions.face_mesh
 camera = cv2.VideoCapture(0)
 desenhar_malhas = mp.solutions.drawing_utils
 desenhar_especificacao = desenhar_malhas.DrawingSpec(thickness=1, circle_radius=1)
-limiar_piscada = 0.15
-limiar_boca_aberta = 0.3
 
-estado_olho_esquerdo = 'aberto'
-estado_olho_direito = 'aberto'
-estado_boca = 'fechada'
-tecla_olho_esquerdo_fechado = 'a'
-tecla_olho_direito_fechado = 'd'
-tecla_boca_aberta = 'w'
+_estado_olho_esquerdo = 'aberto'
+_estado_olho_direito = 'aberto'
+_estado_boca = 'fechada'
 
-executor = ThreadPoolExecutor(max_workers=3)
+_executor = ThreadPoolExecutor(max_workers=3)
+
 
 def aperta_tecla(tecla):
     print(f"Pressionando tecla: {tecla}")
@@ -50,8 +55,48 @@ def aperta_tecla(tecla):
         print("ERRO ao pressionar a tecla:", tecla)
         traceback.print_exc()
 
+
+def pressionar_tecla(tecla):
+    print(f'Segurando tecla: {tecla}')
+    
+    try:
+        if sys.platform == 'win32':
+            pyautogui.keyDown(tecla)
+        elif sys.platform.startswith('linux'):
+            subprocess.Popen(['wtype', '-k', tecla])
+        else:
+            print('Sistema operacional não suportado para pressionar tecla.')
+            
+    except FileNotFoundError:
+        print('ERRO: Comando \'wtype\' não foi encontrado.')
+        
+    except Exception:
+        print(f'ERRO ao pressionar a tecla: {tecla}')
+        traceback.print_exc()
+
+
+def soltar_tecla(tecla):
+    print(f'Soltando tecla: {tecla}')
+    
+    try:
+        if sys.platform == 'win32':
+            pyautogui.keyUp(tecla)
+        elif sys.platform.startswith('linux'):
+            subprocess.Popen(['wtype', '-K', tecla])
+        else:
+            print('Sistema operacional não suportado para soltar tecla.')
+    
+    except FileNotFoundError:
+        print('ERRO: Comando \'wtype\' não foi encontrado.')
+    
+    except Exception:
+        print(f'ERRO ao soltar a tecla: {tecla}')
+        traceback.print_exc()
+
+
 def distancia_euclidiana(ponto1, ponto2):
     return math.sqrt((ponto1.x - ponto2.x)**2 + (ponto1.y - ponto2.y)**2)
+
 
 def calcular_olho(landmarks, pontos_olho):
     p2_p6 = distancia_euclidiana(landmarks[pontos_olho[1]], landmarks[pontos_olho[5]])
@@ -61,12 +106,14 @@ def calcular_olho(landmarks, pontos_olho):
     ear = (p2_p6 + p3_p5) / (2.0 * p1_p4)
     return ear
 
+
 def calcular_boca(landmarks, pontos_boca):
     dist_horizontal = distancia_euclidiana(landmarks[pontos_boca[0]], landmarks[pontos_boca[1]])
     dist_vertical = distancia_euclidiana(landmarks[pontos_boca[2]], landmarks[pontos_boca[3]])
     if dist_horizontal == 0: return 0.0
     mar = dist_vertical / dist_horizontal
     return mar
+      
 
 with malha_facial.FaceMesh(
     max_num_faces=1,
@@ -103,35 +150,46 @@ with malha_facial.FaceMesh(
                 olho_direito = calcular_olho(results.multi_face_landmarks[0].landmark, PONTOS_OLHO_DIREITO)
                 boca = calcular_boca(results.multi_face_landmarks[0].landmark, PONTOS_BOCA)
                 
-                if olho_esquerdo < limiar_piscada:
-                    if estado_olho_esquerdo == "aberto":
-                        estado_olho_esquerdo = "fechado"
-                        executor.submit(aperta_tecla, tecla_olho_esquerdo_fechado)
-                    cv2.putText(image, "Olho Esquerdo Fechado", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                if olho_esquerdo < LIMIAR_PISCADA:
+                    if _estado_olho_esquerdo == 'aberto':
+                        _estado_olho_esquerdo = 'fechado'
+                        _executor.submit(pressionar_tecla, TECLA_OLHO_ESQUERDO_FECHADO)
+                        cv2.putText(image, "Olho Esquerdo Fechado", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 else:
-                    estado_olho_esquerdo = "aberto"
-                    
-                if olho_direito < limiar_piscada: 
-                    if estado_olho_direito == "aberto":
-                        estado_olho_direito = "fechado"
-                        executor.submit(aperta_tecla, tecla_olho_direito_fechado)
-                    cv2.putText(image, "Olho Direito Fechado", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    if _estado_olho_esquerdo == 'fechado':
+                        _estado_olho_esquerdo = 'aberto'
+                        _executor.submit(soltar_tecla, TECLA_OLHO_ESQUERDO_FECHADO)
+                
+                if olho_direito < LIMIAR_PISCADA:
+                    if _estado_olho_direito == 'aberto':
+                        _estado_olho_direito = 'fechado'
+                        _executor.submit(pressionar_tecla, TECLA_OLHO_DIREITO_FECHADO)
+                        cv2.putText(image, "Olho Direito Fechado", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 else:
-                    estado_olho_direito = "aberto"
-                    
-                if boca > limiar_boca_aberta:
-                    if estado_boca == "fechada":
-                        estado_boca = "aberta"
-                        executor.submit(aperta_tecla, tecla_boca_aberta)
-                    cv2.putText(image, "Boca Aberta", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    if _estado_olho_direito == 'fechado':
+                        _estado_olho_direito = 'aberto'
+                        _executor.submit(soltar_tecla, TECLA_OLHO_DIREITO_FECHADO)
+                        
+                if boca > LIMIAR_BOCA_ABERTA:
+                    if _estado_boca == 'fechada':
+                        _estado_boca = 'aberta'
+                        _executor.submit(pressionar_tecla, TECLA_BOCA_ABERTA)
+                        cv2.putText(image, "Boca Aberta", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 else:
-                    estado_boca = "fechada"
+                    if _estado_boca == 'aberta':
+                        _estado_boca = 'fechada'
+                        _executor.submit(soltar_tecla, TECLA_BOCA_ABERTA)
+            
+            time.sleep(0.05)
         except Exception as e:
             print(f"Ocorreu um erro ao processar a imagem: {e}")
             continue        
             
+        detector = face_mesh_module.FaceMeshDetector(maxFaces=1)
+        img, _ =  detector.findFaceMesh(image)
             
-        cv2.imshow('Malha Facial com MediaPipe', cv2.flip(image, 1))
+        cv2.imshow('Malha Facial com MediaPipe', img)
+        cv2.waitKey(1)
         #if cv2.waitKey(5) & 0xFF == 27:
         #    print("Saindo do loop.")
         #    break # sai com esc
