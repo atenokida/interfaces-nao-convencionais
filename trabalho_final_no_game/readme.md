@@ -1,9 +1,10 @@
-# Interface Facial para Jogos de Plataforma
+# Interface Facial para teclado para converter texto em voz através de movimentos faciais 
 
 ## Sobre
 Projeto desenvolvido para a disciplina de Interfaces Não Convencionais (2025/1) do Bacharelado em Ciência da Computação da UTFPR-CM.  
 
-Permite controlar jogos de plataforma simples (e.g. Super Mario) usando expressões faciais. Piscar com os olhos ou abrir a boca aciona teclas específicas, substituindo o uso convencional do clique de botões.
+Esta aplicação permite controlar um teclado virtual utilizando **movimentos faciais**, convertendo texto em voz. O sistema utiliza **detecção de piscadas e detecção de abertura da boca** para navegação e seleção de teclas.
+
 
 ## Como Executar
 ### Pré-requisitos
@@ -28,21 +29,31 @@ Permite controlar jogos de plataforma simples (e.g. Super Mario) usando express�
     python main.py
 
 ## Mapeamento padrão
-  * Olho esquerdo fechado &rarr; Tecla `a`
-  * Olho direito fechado &rarr; Tecla `d`
-  * Boca aberta &rarr; Tecla `w`
+  * Mover para direita: olho direito
+  * Mover para esquerda: olho esquerdo
+  * Mover para cima: Boca aberta + olho esquerdo
+  * Mover para baixo: Boca aberta + olho direito
+  * Selecionar uma tecla: Abrir a boca duas vezes
 
 
 
+# Instalar Python 3.10.14 via pyenv
+```python
 pyenv install 3.10.14
-Instalar a versão do python que roda as dependências do projeto
+```
+```python
 pyenv shell 3.10.14
+```
 
+## Adicionar ao .zshrc
 
-adicionar esse código ao /.zshrc
+Adicione as seguintes linhas ao final do seu ~/.zshrc:
 ```bash
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
 ```
+## Depois, aplique as alterações com:
+```bash
 source ~/.zshrc
+```

@@ -8,26 +8,27 @@ import mediapipe as mp
 import numpy as np 
 from gtts import gTTS
 from playsound import playsound
+desenhar_malhas = mp.solutions.drawing_utils
 
 PONTOS_OLHO_ESQUERDO = [362, 385, 387, 263, 373, 380]
 PONTOS_OLHO_DIREITO = [33, 160, 158, 133, 153, 144]
 PONTOS_BOCA = [78, 308, 13, 14]
 
-limiar_olho_direito = 0.15
+limiar_olho_direito = 0.1
 limiar_olho_esquerdo = 0.1
-limiar_boca_aberta = 0.2
+limiar_boca_aberta = 0.4
 
 teclado_layout = [
     ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
     ['K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'],
     ['U', 'V', 'W', 'X', 'Y', 'Z', ' ', '.', ',', '?'],
     ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-    ['APAGAR', 'LIMPAR', 'FALAR']
+    ['APAGAR', 'LIMPAR', 'FALAR',]
 ]
 cursor_pos = [0, 0]
 frase_atual = ''
 
-COOLDOWN_MOVIMENTO = 0.7
+COOLDOWN_MOVIMENTO = 0.5
 ultimo_movimento_tempo = 0
 
 CONTADOR_BOCA_ABERTA = 0
@@ -106,7 +107,7 @@ def calcular_aspect_ratio_boca(landmarks, pontos_boca):
 
 largura_tela, altura_tela = 800, 480
 tela_teclado = np.zeros((altura_tela, largura_tela, 3), dtype=np.uint8)
-
+abriuu_boca_antes_aberta = False
 with malha_facial.FaceMesh(
     max_num_faces=1,
     refine_landmarks=True,
@@ -124,6 +125,7 @@ with malha_facial.FaceMesh(
         results = face_mesh.process(image_rgb)
 
         if results.multi_face_landmarks:
+            
             landmarks = results.multi_face_landmarks[0].landmark
 
             estado_olho_direito = calcular_aspect_ratio_olho(landmarks, PONTOS_OLHO_ESQUERDO)
@@ -138,22 +140,27 @@ with malha_facial.FaceMesh(
             apenas_esquerdo = olho_e_fechado and not olho_d_fechado
             ambos_abertos = not olho_e_fechado and not olho_d_fechado
             tempo_atual = time.time()
+            
             if boca_aberta and not boca_antes_aberta and ambos_abertos:
+                abriuu_boca_antes_aberta = True
+                print(CONTADOR_BOCA_ABERTA)
                 print("Boca aberta detectada.")
-                CONTADOR_BOCA_ABERTA += 1
                 boca_antes_aberta = True
                 
+            if not boca_aberta and abriuu_boca_antes_aberta:
+                abriuu_boca_antes_aberta = False
+                CONTADOR_BOCA_ABERTA += 1
+                boca_antes_aberta = False
+                selecao_ativada = False
                 if CONTADOR_BOCA_ABERTA == 2:
                     CONTADOR_BOCA_ABERTA = 0
                     manipular_selecao()
-
-            if not boca_aberta:
-                boca_antes_aberta = False
-                selecao_ativada = False
+                
                 
 
             if tempo_atual - ultimo_movimento_tempo > COOLDOWN_MOVIMENTO:
                 if not boca_aberta:
+                    boca_antes_aberta = False
                     if apenas_direito:
                         CONTADOR_BOCA_ABERTA = 0
                         cursor_pos[1] = (cursor_pos[1] + 1) % len(teclado_layout[cursor_pos[0]])
@@ -167,10 +174,12 @@ with malha_facial.FaceMesh(
                 else:
                     if apenas_direito:
                         CONTADOR_BOCA_ABERTA = 0
+                        boca_antes_aberta = False
                         cursor_pos[0] = (cursor_pos[0] + 1) % len(teclado_layout)
                         cursor_pos[1] = min(cursor_pos[1], len(teclado_layout[cursor_pos[0]]) - 1)
                         ultimo_movimento_tempo = tempo_atual
                     elif apenas_esquerdo:
+                        boca_antes_aberta = False
                         CONTADOR_BOCA_ABERTA = 0
                         cursor_pos[0] = (cursor_pos[0] - 1 + len(teclado_layout)) % len(teclado_layout)
                         cursor_pos[1] = min(cursor_pos[1], len(teclado_layout[cursor_pos[0]]) - 1)
