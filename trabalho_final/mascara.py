@@ -34,28 +34,6 @@ _estado_boca = 'fechada'
 _executor = ThreadPoolExecutor(max_workers=3)
 
 
-def aperta_tecla(tecla):
-    print(f"Pressionando tecla: {tecla}")
-
-    try:
-        if sys.platform == 'win32':
-            pyautogui.press(tecla)
-            print(f"Tecla '{tecla}' pressionada.")
-            
-        elif sys.platform.startswith('linux'):
-            subprocess.Popen(['wtype', tecla])
-            print(f"Tecla '{tecla}' pressionada.")
-            
-        else:
-            print("Sistema operacional não suportado.")
-            return
-    except FileNotFoundError:
-        print("ERRO: O comando 'wtype' não foi encontrado. Instale com: sudo pacman -S wtype")
-    except Exception as e:
-        print("ERRO ao pressionar a tecla:", tecla)
-        traceback.print_exc()
-
-
 def pressionar_tecla(tecla):
     print(f'Segurando tecla: {tecla}')
     
